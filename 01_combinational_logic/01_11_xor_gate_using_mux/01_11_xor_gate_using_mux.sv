@@ -28,5 +28,33 @@ module xor_gate_using_mux
   // Implement xor gate using instance(s) of mux,
   // constants 0 and 1, and wire connections
 
+  logic out_notb;
+
+  mux notb (
+    .d0(1'b1), .d1(1'b0),
+    .sel(b), .y(out_notb)
+  );
+
+  mux nota_and_b__or__a_and_notb (
+    .d0(b), .d1(out_notb),
+    .sel(a), .y(o)
+  );
+
+  /* logic out_lut_a0_b0or1, out_lut_a1_b0or1;
+
+  mux lut_a0_b0or1 (
+    .d0(1'b0), .d1(1'b1),
+    .sel(b), .y(out_lut_a0_b0or1)
+  );
+
+  mux lut_a1_b0or1 (
+    .d0(1'b1), .d1(1'b0),
+    .sel(b), .y(out_lut_a1_b0or1)
+  );
+
+  mux lut_a0or1_b0or1 (
+    .d0(out_lut_a0_b0or1), .d1(out_lut_a1_b0or1),
+    .sel(a), .y(o)
+  ); */
 
 endmodule

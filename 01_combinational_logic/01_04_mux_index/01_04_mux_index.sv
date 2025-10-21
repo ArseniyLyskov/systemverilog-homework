@@ -33,5 +33,13 @@ module mux_4_1
   // Using code for mux_2_1 as an example,
   // write code for 4:1 mux using array index
 
+  logic [3:0] array [0:3];
+
+  assign array [0] = d0;
+  assign array [1] = d1;
+  assign array [2] = d2;
+  assign array [3] = d3;
+
+  assign y = array [sel];
 
 endmodule
