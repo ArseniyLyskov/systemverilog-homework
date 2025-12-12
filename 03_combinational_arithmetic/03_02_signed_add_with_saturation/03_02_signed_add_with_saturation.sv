@@ -36,5 +36,9 @@ module signed_add_with_saturation
   // and the arguments are negative,
   // the sum should be set to the minimum negative number.
 
+  logic [3:0] simple_sum;
+  assign simple_sum = a + b;
+  assign overflow = a[3] == b[3] && simple_sum[3] != a[3];
+  assign sum = overflow ? (a[3] ? 4'b1000 : 4'b0111) : simple_sum;
 
 endmodule

@@ -53,4 +53,16 @@ module signed_or_unsigned_mul
   output [2 * n - 1:0] res
 );
 
+  logic  [    n - 1:0] abs_a;
+  logic  [    n - 1:0] abs_b;
+  logic  [2 * n - 1:0] mult;
+  logic                invert_res;
+
+  assign abs_a = (a[n - 1] ? ~a + 1 : a);
+  assign abs_b = (b[n - 1] ? ~b + 1 : b);
+
+  assign mult       = signed_mul ? abs_a * abs_b : a * b;
+  assign invert_res = signed_mul && a[n - 1] != b[n - 1];
+  assign res        = invert_res ? ~mult + 1 : mult;
+
 endmodule
