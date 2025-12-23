@@ -19,5 +19,12 @@ module halve_tokens
     // a -> 110_011_101_000_1111
     // b -> 010_001_001_000_0101
 
+    logic even;
+
+    always_ff @(posedge clk)
+        if (rst)    even <= '0;
+        else if (a) even <= ~even;
+
+    assign b = a && even;
 
 endmodule
