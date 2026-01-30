@@ -75,5 +75,32 @@ module serial_divisibility_by_5_using_fsm
   // Hint 2: As we are interested only in the remainder, all operations are performed under the modulo 5 (% 5).
   // Check manually how the remainder changes under such modulo.
 
+  enum logic[2:0] {
+     MOD_0, MOD_1, MOD_2, MOD_3, MOD_4
+  } state, next_state;
+
+  always_ff @(posedge clk)
+    if (rst) state <= MOD_0;
+    else     state <= next_state;
+
+  always_comb
+    case (state)
+      MOD_0: if(new_bit) next_state = MOD_1;
+             else        next_state = MOD_0;
+
+      MOD_1: if(new_bit) next_state = MOD_3;
+             else        next_state = MOD_2;
+
+      MOD_2: if(new_bit) next_state = MOD_0;
+             else        next_state = MOD_4;
+
+      MOD_3: if(new_bit) next_state = MOD_2;
+             else        next_state = MOD_1;
+
+      MOD_4: if(new_bit) next_state = MOD_4;
+             else        next_state = MOD_3;
+    endcase
+
+  assign div_by_5 = state == MOD_0;
 
 endmodule
