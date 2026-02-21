@@ -43,5 +43,103 @@ module sqrt_formula_distributor
     // Instantiate sufficient number of "formula_1_impl_1_top", "formula_1_impl_2_top",
     // or "formula_2_top" modules to achieve desired performance.
 
+    
+    localparam N_COMPUTING_UNITS = 
+        ((formula == 1) && (impl == 1)) ? 15 :
+        ((formula == 1) && (impl == 2)) ? 19 :
+        ((formula == 2))                ? 50 :
+        50;
+
+    // Counter
+    logic [N_COMPUTING_UNITS - 1:0] counter_onehot;
+
+    always_ff @(posedge clk)
+        if (rst) 
+            counter_onehot <= 1'b1;
+        else if (arg_vld) 
+            counter_onehot <= { counter_onehot[N_COMPUTING_UNITS - 2 : 0], counter_onehot[N_COMPUTING_UNITS - 1] };
+        
+    // vld and arg registers
+    logic [N_COMPUTING_UNITS - 1:0]             arg_vld_reg;
+    logic [N_COMPUTING_UNITS - 1:0][32*3 - 1:0] arg_data_reg;
+
+    always_ff @(posedge clk)
+        if (rst) arg_vld_reg <= '0;
+        else     arg_vld_reg <= {N_COMPUTING_UNITS{arg_vld}} & counter_onehot;
+        
+    always_ff @(posedge clk)
+        for (int i = 0; i < N_COMPUTING_UNITS; i++)
+            if (arg_vld & counter_onehot[i])
+                arg_data_reg[i] <= {a, b, c};
+            
+    // Computing units
+    logic [N_COMPUTING_UNITS - 1:0]       isqrt_y_vld;
+    logic [N_COMPUTING_UNITS - 1:0][31:0] isqrt_y; 
+
+    generate 
+        if ((formula == 1) & (impl == 1))
+            for (genvar i = 0; i < N_COMPUTING_UNITS; i++) begin
+                formula_1_impl_1_top f1i1_computing_unit (
+                    .clk     (clk                             ),
+                    .rst     (rst                             ),
+
+                    .arg_vld (arg_vld_reg[i]                  ),
+                    .a       (arg_data_reg[i][32*3 - 1 : 32*2]),
+                    .b       (arg_data_reg[i][32*2 - 1 : 32*1]),
+                    .c       (arg_data_reg[i][32*1 - 1 : 32*0]),
+
+                    .res_vld (isqrt_y_vld[i]                  ),
+                    .res     (isqrt_y[i]                      )
+                );
+            end
+        else if ((formula == 1) & (impl == 2))
+            for (genvar i = 0; i < N_COMPUTING_UNITS; i++) begin
+                formula_1_impl_2_top f1i2_computing_unit (
+                    .clk     (clk                             ),
+                    .rst     (rst                             ),
+
+                    .arg_vld (arg_vld_reg[i]                  ),
+                    .a       (arg_data_reg[i][32*3 - 1 : 32*2]),
+                    .b       (arg_data_reg[i][32*2 - 1 : 32*1]),
+                    .c       (arg_data_reg[i][32*1 - 1 : 32*0]),
+
+                    .res_vld (isqrt_y_vld[i]                  ),
+                    .res     (isqrt_y[i]                      )
+                );
+            end
+        else if (formula == 2) 
+            for (genvar i = 0; i < N_COMPUTING_UNITS; i++) begin
+                formula_2_top f2_computing_unit (
+                    .clk     (clk                             ),
+                    .rst     (rst                             ),
+
+                    .arg_vld (arg_vld_reg[i]                  ),
+                    .a       (arg_data_reg[i][32*3 - 1 : 32*2]),
+                    .b       (arg_data_reg[i][32*2 - 1 : 32*1]),
+                    .c       (arg_data_reg[i][32*1 - 1 : 32*0]),
+
+                    .res_vld (isqrt_y_vld[i]                  ),
+                    .res     (isqrt_y[i]                      )
+                );
+            end
+    endgenerate
+    
+    // Outputs
+    logic        temp_res_vld;
+    logic [31:0] temp_res;
+
+    always_comb begin 
+        temp_res_vld = '0;
+        temp_res     = '0;
+
+        for (int i = 0; i < N_COMPUTING_UNITS; i++)
+            if (isqrt_y_vld[i]) begin 
+                temp_res_vld = '1;
+                temp_res     = isqrt_y[i];
+            end
+    end
+    
+    assign res_vld = temp_res_vld;
+    assign res     = temp_res;
 
 endmodule

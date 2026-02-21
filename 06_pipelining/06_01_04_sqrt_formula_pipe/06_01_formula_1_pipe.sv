@@ -42,5 +42,56 @@ module formula_1_pipe
     // FPGA-Systems Magazine :: FSM :: Issue ALFA (state_0)
     // You can download this issue from https://fpga-systems.ru/fsm#state_0
 
+    logic [31:0] sqrt_a;
+    logic [31:0] sqrt_b;
+    logic [31:0] sqrt_c;
+    logic        y_vld;
+
+    logic [31:0] res_ff;
+    logic        vld_ff;
+    
+    always_ff @(posedge clk or posedge rst)
+        if (rst) vld_ff <= '0;
+        else     vld_ff <= y_vld;
+
+    always_ff @(posedge clk)
+        if (y_vld) res_ff <= sqrt_a + sqrt_b + sqrt_c;
+
+    // isqrt a
+    isqrt isqrt_a (
+        .clk   (clk    ),
+        .rst   (rst    ),
+
+        .x_vld (arg_vld),
+        .x     (a      ),
+
+        .y_vld (y_vld  ),
+        .y     (sqrt_a )
+    );
+
+    // isqrt b
+    isqrt isqrt_b (
+        .clk   (clk    ),
+        .rst   (rst    ),
+
+        .x_vld (arg_vld),
+        .x     (b      ),
+
+        .y     (sqrt_b )
+    );
+
+    // isqrt c
+    isqrt isqrt_c (
+        .clk   (clk    ),
+        .rst   (rst    ),
+
+        .x_vld (arg_vld),
+        .x     (c      ),
+
+        .y     (sqrt_c )
+    );
+    
+    assign res_vld = vld_ff;
+    assign res     = res_ff;
 
 endmodule

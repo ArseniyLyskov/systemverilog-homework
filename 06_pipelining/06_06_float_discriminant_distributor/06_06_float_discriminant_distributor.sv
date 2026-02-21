@@ -31,4 +31,73 @@ module float_discriminant_distributor (
     // Latency of the module "float_discriminant" should be clarified from the waveform.
 
 
+    localparam N_COMPUTING_UNITS = 14;
+
+    // Counter
+    logic [N_COMPUTING_UNITS - 1:0] counter_onehot;
+
+    always_ff @(posedge clk)
+        if (rst) 
+            counter_onehot <= 1'b1;
+        else if (arg_vld) 
+            counter_onehot <= { counter_onehot[N_COMPUTING_UNITS - 2 : 0], counter_onehot[N_COMPUTING_UNITS - 1] };
+        
+    // vld and arg registers
+    logic [N_COMPUTING_UNITS - 1:0]               arg_vld_reg;
+    logic [N_COMPUTING_UNITS - 1:0][FLEN*3 - 1:0] arg_data_reg;
+
+    always_ff @(posedge clk)
+        if (rst) arg_vld_reg <= '0;
+        else     arg_vld_reg <= {N_COMPUTING_UNITS{arg_vld}} & counter_onehot;
+        
+    always_ff @(posedge clk)
+        for (int i = 0; i < N_COMPUTING_UNITS; i++)
+            if (arg_vld & counter_onehot[i])
+                arg_data_reg[i] <= {a, b, c};
+            
+    // Computing units
+    logic [N_COMPUTING_UNITS - 1:0]             cu_res_vld;
+    logic [N_COMPUTING_UNITS - 1:0][FLEN - 1:0] cu_res; 
+    logic [N_COMPUTING_UNITS - 1:0]             cu_res_negative; 
+    logic [N_COMPUTING_UNITS - 1:0]             cu_err; 
+    logic [N_COMPUTING_UNITS - 1:0]             cu_busy; 
+
+    generate 
+        for (genvar i = 0; i < N_COMPUTING_UNITS; i++) begin
+            float_discriminant computing_unit (
+                .clk          (clk                                 ),
+                .rst          (rst                                 ),
+
+                .arg_vld      (arg_vld_reg[i]                      ),
+                .a            (arg_data_reg[i][FLEN*3 - 1 : FLEN*2]),
+                .b            (arg_data_reg[i][FLEN*2 - 1 : FLEN*1]),
+                .c            (arg_data_reg[i][FLEN*1 - 1 : FLEN*0]),
+
+                .res_vld      (cu_res_vld[i]                       ),
+                .res          (cu_res[i]                           ),
+                .res_negative (cu_res_negative[i]                  ),
+                .err          (cu_err[i]                           ),
+                .busy         (cu_busy[i]                          )
+            );
+        end
+    endgenerate
+    
+    // Outputs
+    always_comb begin 
+        res_vld      = '0;
+        res          = '0;
+        res_negative = '0;
+        err          = '0;
+        busy         = '0;
+
+        for (int i = 0; i < N_COMPUTING_UNITS; i++)
+            if (cu_res_vld[i]) begin 
+                res_vld      = '1;
+                res          = cu_res[i];
+                res_negative = cu_res_negative[i];
+                err          = cu_err[i];
+                busy         = cu_busy[i];
+            end
+    end
+
 endmodule

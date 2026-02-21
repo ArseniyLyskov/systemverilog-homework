@@ -37,4 +37,58 @@ module formula_2_fsm
     // You can download this issue from https://fpga-systems.ru/fsm
 
 
+    // FSM state register
+    enum logic [1:0] {
+        IDLE, WAIT_1, WAIT_2, WAIT_3
+    } state, next_state;
+
+    always_ff @(posedge clk)
+        if (rst) state <= IDLE;
+        else     state <= next_state;
+
+    // FSM state transitions logic
+    always_comb begin
+        next_state = state;
+        case (state) 
+            IDLE:   if (arg_vld)     next_state = WAIT_1;
+            WAIT_1: if (isqrt_y_vld) next_state = WAIT_2;
+            WAIT_2: if (isqrt_y_vld) next_state = WAIT_3;
+            WAIT_3: if (isqrt_y_vld) next_state = IDLE;
+        endcase
+    end
+
+
+    // b, c registers
+    logic [31:0] a_reg, b_reg;
+    always_ff @(posedge clk)
+        if ((state == IDLE) & arg_vld)
+            {a_reg, b_reg} <= {a, b};
+
+
+    // isqrt interface
+    always_comb begin 
+        isqrt_x = 'x;
+        isqrt_x_vld = '0;
+
+        case (state) 
+            IDLE:   if (arg_vld    ) begin 
+                isqrt_x = c; 
+                isqrt_x_vld = '1;
+            end
+            WAIT_1: if (isqrt_y_vld) begin 
+                isqrt_x = res + b_reg; 
+                isqrt_x_vld = '1;
+            end
+            WAIT_2: if (isqrt_y_vld) begin 
+                isqrt_x = res + a_reg; 
+                isqrt_x_vld = '1;
+            end
+        endcase
+    end
+
+
+    // Result
+    assign res     = isqrt_y;
+    assign res_vld = isqrt_y_vld & (state == WAIT_3);
+
 endmodule
