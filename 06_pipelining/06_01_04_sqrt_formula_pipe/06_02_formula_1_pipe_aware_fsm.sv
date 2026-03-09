@@ -61,6 +61,11 @@ module formula_1_pipe_aware_fsm
     // FPGA-Systems Magazine :: FSM :: Issue ALFA (state_0)
     // You can download this issue from https://fpga-systems.ru/fsm#state_0
 
+    // b      , c       stored here before calculating sqrt's
+    // sqrt(a), sqrt(b) stored here before calculating sum
+    logic [31:0] temp_ff1;
+    logic [31:0] temp_ff2;
+    
     // up FSM
     enum logic [1:0] { 
         UP_READY, UP_SENDING_B, UP_SENDING_C 
@@ -97,9 +102,6 @@ module formula_1_pipe_aware_fsm
 
     // b      , c       stored here before calculating sqrt's
     // sqrt(a), sqrt(b) stored here before calculating sum
-    logic [31:0] temp_ff1;
-    logic [31:0] temp_ff2;
-    
     always_ff @(posedge clk)
         if ((up_state == UP_READY) & arg_vld) begin
             temp_ff1 <= b;

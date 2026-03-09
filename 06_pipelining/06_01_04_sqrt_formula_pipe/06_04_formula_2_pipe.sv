@@ -44,10 +44,23 @@ module formula_2_pipe
 
     localparam N_PIPE_STAGES = 16;
 
-    // intermediate calculations
+
+    logic        isqrt1_down_vld;
+    logic [31:0] isqrt1_down_data;
+
     logic        isqrt2_up_vld;
     logic [31:0] isqrt2_up_data;
-    
+    logic        isqrt2_down_vld;
+    logic [31:0] isqrt2_down_data;
+
+    logic        isqrt3_up_vld;
+    logic [31:0] isqrt3_up_data;
+
+    logic [31:0] shift_reg1_data;
+    logic [31:0] shift_reg2_data;
+
+
+    // intermediate calculations
     always_ff @(posedge clk)
         if (rst) isqrt2_up_vld <= '0;
         else     isqrt2_up_vld <= isqrt1_down_vld;
@@ -55,9 +68,6 @@ module formula_2_pipe
     always_ff @(posedge clk)
         if (isqrt1_down_vld)
             isqrt2_up_data <= isqrt1_down_data + shift_reg1_data;
-
-    logic        isqrt3_up_vld;
-    logic [31:0] isqrt3_up_data;
 
     always_ff @(posedge clk)
         if (rst) isqrt3_up_vld <= '0;
@@ -69,8 +79,6 @@ module formula_2_pipe
         
 
     // shift register 1
-    logic [31:0] shift_reg1_data;
-
     shift_register_with_valid #(
         .width    (32                 ),
         .depth    (N_PIPE_STAGES      )
@@ -86,8 +94,6 @@ module formula_2_pipe
     );
 
     // shift register 2
-    logic [31:0] shift_reg2_data;
-
     shift_register_with_valid #(
         .width    (32                 ),
         .depth    (2*N_PIPE_STAGES + 1)
@@ -102,10 +108,8 @@ module formula_2_pipe
         .out_data (shift_reg2_data    )
     );
 
-    // isqrt1  
-    logic        isqrt1_down_vld;
-    logic [31:0] isqrt1_down_data;
 
+    // isqrt1  
     isqrt #(
         .n_pipe_stages(N_PIPE_STAGES)
     ) isqrt1 (
@@ -120,9 +124,6 @@ module formula_2_pipe
     );
 
     // isqrt2
-    logic        isqrt2_down_vld;
-    logic [31:0] isqrt2_down_data;
-
     isqrt #(
         .n_pipe_stages(N_PIPE_STAGES)
     ) isqrt2 (

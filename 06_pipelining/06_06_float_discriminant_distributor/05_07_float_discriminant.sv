@@ -33,7 +33,16 @@ module float_discriminant (
 
     localparam [FLEN - 1:0] FOUR = 64'h4010_0000_0000_0000;
 
-    
+    logic [FLEN-1:0] temp_reg;
+
+    logic [FLEN-1:0] mult_a, mult_b, mult_res;
+    logic            mult_up_valid, mult_down_valid;
+    logic            mult_busy, mult_error;
+
+    logic [FLEN-1:0]  sub_a, sub_b, sub_res;
+    logic             sub_up_valid, sub_down_valid;
+    logic             sub_busy, sub_error;
+
     // FSM
 
     // WAIT_AC : mult(a , c  )
@@ -67,7 +76,6 @@ module float_discriminant (
     // Temp register
     // Storing b for mult(b, b)
     // Then storing 4ac for sub(bb, 4ac)
-    logic [FLEN-1:0] temp_reg;
     always_ff @(posedge clk)
         if ((state == IDLE) & arg_vld)
             temp_reg <= b;
@@ -76,10 +84,6 @@ module float_discriminant (
 
 
     // f_mult interface
-    logic [FLEN-1:0] mult_a, mult_b, mult_res;
-    logic            mult_up_valid, mult_down_valid;
-    logic            mult_busy, mult_error;
-
     f_mult f_mult_inst (
         .clk        ( clk             ),
         .rst        ( rst             ),
@@ -121,10 +125,6 @@ module float_discriminant (
 
 
     // f_sub interface
-    logic [FLEN-1:0]  sub_a, sub_b, sub_res;
-    logic             sub_up_valid, sub_down_valid;
-    logic             sub_busy, sub_error;
-
     f_sub f_sub_inst (
         .clk        ( clk            ),
         .rst        ( rst            ),

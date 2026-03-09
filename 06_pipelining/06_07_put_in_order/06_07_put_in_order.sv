@@ -31,9 +31,12 @@ module put_in_order
     // from Homework 2, but here block should also preserve the output order.
 
 
-    // Counter
     logic [n_inputs - 1:0] counter_onehot;
 
+    logic [n_inputs - 1:0]              vld_reg;
+    logic [n_inputs - 1:0][width - 1:0] data_reg;
+        
+    // Counter
     always_ff @(posedge clk)
         if (rst) 
             counter_onehot <= 1'b1;
@@ -41,9 +44,6 @@ module put_in_order
             counter_onehot <= { counter_onehot[n_inputs - 2 : 0], counter_onehot[n_inputs - 1] };
         
     // vld and data registers
-    logic [n_inputs - 1:0]              vld_reg;
-    logic [n_inputs - 1:0][width - 1:0] data_reg;
-        
     always_ff @(posedge clk) begin
         if (rst)
             vld_reg <= '0;
