@@ -155,6 +155,7 @@ module testbench;
         // mem: write : addr 00000100 data 44444444333333332222222211111111
 
         // TODO
+        drive_read  (32'h4100);
 
         $display ("We are supposed to see an eviction and fill");
 
@@ -162,6 +163,7 @@ module testbench;
         // mem: read  : addr 00000108 data 44444444333333332222222211111111
 
         // TODO
+        drive_write (32'h0108, 32'hDEADBEEF);
 
         make_gap_between_tests ();
 
