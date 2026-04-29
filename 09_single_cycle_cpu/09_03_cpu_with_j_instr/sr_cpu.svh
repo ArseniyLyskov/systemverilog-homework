@@ -21,6 +21,18 @@
 `define ALU_SLTU    3'b011
 `define ALU_SUB     3'b100
 
+// PC source
+
+`define PC_PLUS4    2'b00
+`define PC_BRANCH   2'b01
+`define PC_JAL      2'b10
+
+// WD data
+
+`define WD_ALU      2'b00
+`define WD_IMMU     2'b01
+`define WD_IMMJ     2'b10
+
 // Instruction opcode
 
 `define RVOP_ADDI   7'b0010011
@@ -32,6 +44,7 @@
 `define RVOP_SRL    7'b0110011
 `define RVOP_SLTU   7'b0110011
 `define RVOP_SUB    7'b0110011
+`define RVOP_JAL    7'b1101111
 
 // Instruction funct3
 

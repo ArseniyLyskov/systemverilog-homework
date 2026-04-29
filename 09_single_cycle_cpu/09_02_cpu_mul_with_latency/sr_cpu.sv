@@ -29,8 +29,9 @@ module sr_cpu
     wire        pcSrc;
     wire        regWrite;
     wire        aluSrc;
-    wire        wdSrc;
+    wire  [1:0] wdSrc;
     wire  [2:0] aluControl;
+    wire        stall;
 
     // instruction decode wires
 
@@ -55,6 +56,7 @@ module sr_cpu
     (
         .clk      ( clk       ),
         .rst      ( rst       ),
+        .en       ( ~stall    ),
         .d        ( pcNext    ),
         .q        ( pc        )
     );
@@ -85,7 +87,7 @@ module sr_cpu
     wire [31:0] rd0;
     wire [31:0] rd1;
     wire [31:0] rd2;
-    wire [31:0] wd3;
+    logic [31:0] wd3;
 
     sr_register_file i_rf
     (
@@ -98,7 +100,7 @@ module sr_cpu
         .rd1        ( rd1         ),
         .rd2        ( rd2         ),
         .wd3        ( wd3         ),
-        .we3        ( regWrite
+        .we3        ( regWrite & ~stall
         )
     );
 
@@ -116,9 +118,24 @@ module sr_cpu
         .result     ( aluResult   )
     );
 
+    // mdu
 
-    assign wd3 =
-                wdSrc ? immU : aluResult;
+    wire        mdu_i_vld;
+    wire        mdu_o_vld;
+    wire [31:0] mdu_result;
+    wire        mdu_busy;
+
+    sr_mdu mdu
+    (
+        .clk        ( clk         ),
+        .rst        ( rst         ),
+        .i_vld      ( mdu_i_vld   ),
+        .srcA       ( rd1         ),
+        .srcB       ( rd2         ),
+        .o_vld      ( mdu_o_vld   ),
+        .result     ( mdu_result  ),
+        .busy       ( mdu_busy    )
+    );
 
     // control
 
@@ -132,8 +149,20 @@ module sr_cpu
         .regWrite   ( regWrite    ),
         .aluSrc     ( aluSrc      ),
         .wdSrc      ( wdSrc       ),
-        .aluControl ( aluControl  )
+        .aluControl ( aluControl  ),
+        .mdu_i_vld  ( mdu_i_vld   ),
+        .mdu_o_vld  ( mdu_o_vld   ),
+        .mdu_busy   ( mdu_busy    ),
+        .stall      ( stall       )
     );
+
+    always_comb 
+        case (wdSrc) 
+            `WD_ALU  : wd3 = aluResult;
+            `WD_IMMU : wd3 = immU;
+            `WD_MDU  : wd3 = mdu_result;
+            default  : wd3 = 'x;
+        endcase
 
     // debug register access
 

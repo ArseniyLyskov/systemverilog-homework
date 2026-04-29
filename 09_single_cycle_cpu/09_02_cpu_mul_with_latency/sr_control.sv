@@ -18,15 +18,20 @@ module sr_control
     input        [ 2:0] cmdF3,
     input        [ 6:0] cmdF7,
     input               aluZero,
+    input  logic        mdu_o_vld,
+    input  logic        mdu_busy,
     output              pcSrc,
     output logic        regWrite,
     output logic        aluSrc,
-    output logic        wdSrc,
-    output logic [ 2:0] aluControl
+    output logic [ 1:0] wdSrc,
+    output logic [ 2:0] aluControl,
+    output logic        mdu_i_vld,
+    output logic        stall
 );
     logic          branch;
     logic          condZero;
     assign pcSrc = branch & (aluZero == condZero);
+    assign stall = (mdu_i_vld | mdu_busy) & ~mdu_o_vld;
 
     always_comb
     begin
@@ -34,7 +39,8 @@ module sr_control
         condZero    = 1'b0;
         regWrite    = 1'b0;
         aluSrc      = 1'b0;
-        wdSrc       = 1'b0;
+        mdu_i_vld   = 1'b0;
+        wdSrc       = `WD_ALU;
         aluControl  = `ALU_ADD;
 
         casez ({ cmdF7, cmdF3, cmdOp })
@@ -44,8 +50,10 @@ module sr_control
             { `RVF7_SLTU, `RVF3_SLTU, `RVOP_SLTU } : begin regWrite = 1'b1; aluControl = `ALU_SLTU; end
             { `RVF7_SUB,  `RVF3_SUB,  `RVOP_SUB  } : begin regWrite = 1'b1; aluControl = `ALU_SUB;  end
 
+            { `RVF7_MUL,  `RVF3_MUL,  `RVOP_MUL  } : begin regWrite = mdu_o_vld; wdSrc = `WD_MDU; mdu_i_vld = ~mdu_busy; end
+
             { `RVF7_ANY,  `RVF3_ADDI, `RVOP_ADDI } : begin regWrite = 1'b1; aluSrc = 1'b1; aluControl = `ALU_ADD; end
-            { `RVF7_ANY,  `RVF3_ANY,  `RVOP_LUI  } : begin regWrite = 1'b1; wdSrc  = 1'b1; end
+            { `RVF7_ANY,  `RVF3_ANY,  `RVOP_LUI  } : begin regWrite = 1'b1; wdSrc = `WD_IMMU; end
 
             { `RVF7_ANY,  `RVF3_BEQ,  `RVOP_BEQ  } : begin branch = 1'b1; condZero = 1'b1; aluControl = `ALU_SUB; end
             { `RVF7_ANY,  `RVF3_BNE,  `RVOP_BNE  } : begin branch = 1'b1; aluControl = `ALU_SUB; end

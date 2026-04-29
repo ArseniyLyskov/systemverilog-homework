@@ -26,10 +26,10 @@ module sr_cpu
     // control wires
 
     wire        aluZero;
-    wire        pcSrc;
+    wire  [1:0] pcSrc;
     wire        regWrite;
     wire        aluSrc;
-    wire        wdSrc;
+    wire  [1:0] wdSrc;
     wire  [2:0] aluControl;
 
     // instruction decode wires
@@ -43,15 +43,23 @@ module sr_cpu
     wire [31:0] immI;
     wire [31:0] immB;
     wire [31:0] immU;
+    wire [31:0] immJ;
 
     // program counter
 
     wire [31:0] pc;
     wire [31:0] pcBranch = pc + immB;
     wire [31:0] pcPlus4  = pc + 32'd4;
-    wire [31:0] pcNext   =
-                            pcSrc ? pcBranch :
-                                    pcPlus4;
+    wire [31:0] pcJAL    = pc + immJ;
+    logic [31:0] pcNext;
+
+    always_comb
+        case (pcSrc)
+            `PC_BRANCH : pcNext = pcBranch;
+            `PC_PLUS4  : pcNext = pcPlus4;
+            `PC_JAL    : pcNext = pcJAL;
+            default    : pcNext = 'x;
+        endcase
 
     register_with_rst r_pc (clk, rst, pcNext, pc);
 
@@ -73,7 +81,8 @@ module sr_cpu
         .cmdF7      ( cmdF7       ),
         .immI       ( immI        ),
         .immB       ( immB        ),
-        .immU       ( immU        )
+        .immU       ( immU        ),
+        .immJ       ( immJ        )
     );
 
     // register file
@@ -81,7 +90,7 @@ module sr_cpu
     wire [31:0] rd0;
     wire [31:0] rd1;
     wire [31:0] rd2;
-    wire [31:0] wd3;
+    logic [31:0] wd3;
 
     sr_register_file i_rf
     (
@@ -111,9 +120,13 @@ module sr_cpu
         .result     ( aluResult   )
     );
 
-    assign wd3 =
-                wdSrc ? immU    :
-                        aluResult;
+    always_comb 
+        case (wdSrc) 
+            `WD_ALU  : wd3 = aluResult;
+            `WD_IMMU : wd3 = immU;
+            `WD_IMMJ : wd3 = immJ;
+            default  : wd3 = 'x;
+        endcase
 
     // control
 
